@@ -259,12 +259,14 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	}
 
 	if err = msg.WriteMsg(conn, loginMsg); err != nil {
+		xl.Error("msg.WriteMsg %v", err)
 		return
 	}
 
 	var loginRespMsg msg.LoginResp
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	if err = msg.ReadMsgInto(conn, &loginRespMsg); err != nil {
+		xl.Error("msg.ReadMsgInto %v", err)
 		return
 	}
 	conn.SetReadDeadline(time.Time{})

@@ -314,7 +314,7 @@ func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {
 		conn.Close()
 		return
 	}
-	xl.Info("rawMsg:%v", rawMsg)
+	xl.Info("Service handleConnection rawMsg:%v", rawMsg)
 	conn.SetReadDeadline(time.Time{})
 	switch m := rawMsg.(type) {
 	case *msg.Login:
