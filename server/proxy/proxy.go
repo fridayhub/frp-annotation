@@ -285,7 +285,7 @@ func HandleUserTcpConnection(pxy Proxy, userConn net.Conn, serverCfg config.Serv
 }
 
 type ProxyManager struct {
-	// proxies indexed by proxy name
+	// proxies indexed by proxy runId
 	pxys map[string]Proxy
 
 	mu sync.RWMutex

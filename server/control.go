@@ -58,7 +58,7 @@ func (cm *ControlManager) Add(runId string, ctl *Control) (oldCtl *Control) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	oldCtl, ok := cm.ctlsByRunId[runId]
+	oldCtl, ok := cm.ctlsByRunId[runId]  // 如果已经该runId已经存在，则用现在的替换老的
 	if ok {
 		oldCtl.Replaced(ctl)
 	}
@@ -375,7 +375,7 @@ func (ctl *Control) stoper() {
 
 	for _, pxy := range ctl.proxies {
 		pxy.Close()
-		ctl.pxyManager.Del(pxy.GetName())
+		ctl.pxyManager.Del(ctl.runId)
 		metrics.Server.CloseProxy(pxy.GetName(), pxy.GetConf().GetBaseInfo().ProxyType)
 	}
 
@@ -443,7 +443,7 @@ func (ctl *Control) manager() {
 				} else {
 					resp.RemoteAddr = remoteAddr
 					xl.Info("new proxy [%s] success, addr:[%s]", m.ProxyName, remoteAddr)
-					metrics.Server.NewProxy(m.ProxyName, m.ProxyType)
+					metrics.Server.NewProxy(ctl.loginMsg.RunId, m.ProxyType)
 				}
 				ctl.sendCh <- resp
 			case *msg.CloseProxy:
@@ -530,13 +530,13 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		}
 	}()
 
-	err = ctl.pxyManager.Add(pxyMsg.ProxyName, pxy)
+	err = ctl.pxyManager.Add(ctl.runId, pxy)
 	if err != nil {
 		return
 	}
 
 	ctl.mu.Lock()
-	ctl.proxies[pxy.GetName()] = pxy
+	ctl.proxies[ctl.runId] = pxy
 	ctl.mu.Unlock()
 	return
 }
@@ -553,7 +553,7 @@ func (ctl *Control) CloseProxy(closeMsg *msg.CloseProxy) (err error) {
 		ctl.portsUsedNum = ctl.portsUsedNum - pxy.GetUsedPortsNum()
 	}
 	pxy.Close()
-	ctl.pxyManager.Del(pxy.GetName())
+	ctl.pxyManager.Del(ctl.runId)
 	delete(ctl.proxies, closeMsg.ProxyName)
 	ctl.mu.Unlock()
 
