@@ -29,6 +29,8 @@ import (
 // recommended to use GetDefaultClientConf instead of creating this object
 // directly, so that all unspecified fields have reasonable default values.
 type ClientCommonConf struct {
+	//由客户端生成id
+	RunId string `json:"run_id"`
 	auth.AuthClientConfig
 	// ServerAddr specifies the address of the server to connect to. By
 	// default, this value is "0.0.0.0".
@@ -163,6 +165,11 @@ func UnmarshalClientConfFromIni(content string) (cfg ClientCommonConf, err error
 		ok     bool
 		v      int64
 	)
+
+	if tmpStr, ok = conf.Get("common", "run_id"); ok {
+		cfg.RunId = tmpStr
+	}
+
 	if tmpStr, ok = conf.Get("common", "server_addr"); ok {
 		cfg.ServerAddr = tmpStr
 	}

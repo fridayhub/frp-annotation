@@ -40,7 +40,6 @@ import (
 // Service is a client service.
 type Service struct {
 	// uniq id got from frps, attach it in loginMsg
-	runId string
 
 	// manager control connection with server
 	ctl   *Control
@@ -109,7 +108,7 @@ func (svr *Service) Run() error {
 			}
 		} else {
 			// login success
-			ctl := NewControl(svr.ctx, svr.runId, conn, session, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
+			ctl := NewControl(svr.ctx, svr.cfg.RunId, conn, session, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
 			ctl.Run()
 			svr.ctlMu.Lock()
 			svr.ctl = ctl
@@ -185,7 +184,7 @@ func (svr *Service) keepControllerWorking() {
 			// reconnect success, init delayTime
 			delayTime = time.Second
 
-			ctl := NewControl(svr.ctx, svr.runId, conn, session, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
+			ctl := NewControl(svr.ctx, svr.cfg.RunId, conn, session, svr.cfg, svr.pxyCfgs, svr.visitorCfgs, svr.serverUDPPort, svr.authSetter)
 			ctl.Run()
 			svr.ctlMu.Lock()
 			if svr.ctl != nil {
@@ -203,6 +202,8 @@ func (svr *Service) keepControllerWorking() {
 // session: if it's not nil, using tcp mux
 func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	xl := xlog.FromContextSafe(svr.ctx)
+	xl.ResetPrefixes()
+	xl.AppendPrefix(svr.cfg.RunId)
 	var tlsConfig *tls.Config
 	if svr.cfg.TLSEnable {
 		tlsConfig = &tls.Config{
@@ -248,10 +249,10 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 		User:      svr.cfg.User,
 		Version:   version.Full(),
 		Timestamp: time.Now().Unix(),
-		RunId:     svr.runId,
+		RunId:     svr.cfg.RunId,
 		Metas:     svr.cfg.Metas,
 	}
-
+	xl.Info("cfg.RunId:%s\n", svr.cfg.RunId)
 	// Add auth
 	if err = svr.authSetter.SetLogin(loginMsg); err != nil {
 		return
@@ -273,10 +274,6 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 		xl.Error("%s", loginRespMsg.Error)
 		return
 	}
-
-	svr.runId = loginRespMsg.RunId
-	xl.ResetPrefixes()
-	xl.AppendPrefix(svr.runId)
 
 	svr.serverUDPPort = loginRespMsg.ServerUdpPort
 	xl.Info("login to server success, get run id [%s], server udp port [%d]", loginRespMsg.RunId, loginRespMsg.ServerUdpPort)

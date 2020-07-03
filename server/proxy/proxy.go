@@ -149,6 +149,7 @@ func (pxy *BaseProxy) GetWorkConnFromPool(src, dst net.Addr) (workConn net.Conn,
 // handler: each proxy type can set different handler function to deal with connections accepted from listeners.
 func (pxy *BaseProxy) startListenHandler(p Proxy, handler func(Proxy, net.Conn, config.ServerCommonConf)) {
 	xl := xlog.FromContextSafe(pxy.ctx)
+	xl.Info("BaseProxy startListenHandler name:%s, listeners:%v", pxy.name, pxy.listeners)
 	for _, listener := range pxy.listeners {
 		go func(l net.Listener) {
 			for {

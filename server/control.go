@@ -415,7 +415,7 @@ func (ctl *Control) manager() {
 			if !ok {
 				return
 			}
-
+			xl.Info("recv rawMsg:%v", rawMsg)
 			switch m := rawMsg.(type) {
 			case *msg.NewProxy:
 				content := &plugin.NewProxyContent{
@@ -442,7 +442,7 @@ func (ctl *Control) manager() {
 					resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", m.ProxyName), err, ctl.serverCfg.DetailedErrorsToClient)
 				} else {
 					resp.RemoteAddr = remoteAddr
-					xl.Info("new proxy [%s] success", m.ProxyName)
+					xl.Info("new proxy [%s] success, addr:[%s]", m.ProxyName, remoteAddr)
 					metrics.Server.NewProxy(m.ProxyName, m.ProxyType)
 				}
 				ctl.sendCh <- resp

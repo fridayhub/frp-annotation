@@ -314,10 +314,11 @@ func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {
 		conn.Close()
 		return
 	}
+	xl.Info("rawMsg:%v", rawMsg)
 	conn.SetReadDeadline(time.Time{})
-
 	switch m := rawMsg.(type) {
 	case *msg.Login:
+		xl.Info("msg.Login:", m)
 		// server plugin hook
 		content := &plugin.LoginContent{
 			Login: *m,
@@ -339,10 +340,12 @@ func (svr *Service) handleConnection(ctx context.Context, conn net.Conn) {
 			conn.Close()
 		}
 	case *msg.NewWorkConn:
+		xl.Info("msg.NewWorkConn:", m)
 		if err := svr.RegisterWorkConn(conn, m); err != nil {
 			conn.Close()
 		}
 	case *msg.NewVisitorConn:
+		xl.Info("msg.NewVisitorConn:", m)
 		if err = svr.RegisterVisitorConn(conn, m); err != nil {
 			xl.Warn("register visitor conn error: %v", err)
 			msg.WriteMsg(conn, &msg.NewVisitorConnResp{
@@ -418,16 +421,18 @@ func (svr *Service) HandleListener(l net.Listener) {
 func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err error) {
 	// If client's RunId is empty, it's a new client, we just create a new controller.
 	// Otherwise, we check if there is one controller has the same run id. If so, we release previous controller and start new one.
-	if loginMsg.RunId == "" {
-		loginMsg.RunId, err = util.RandId()
-		if err != nil {
-			return
-		}
-	}
-
 	ctx := frpNet.NewContextFromConn(ctlConn)
 	xl := xlog.FromContextSafe(ctx)
+	if loginMsg.RunId == "" {
+		//loginMsg.RunId, err = util.RandId()
+		//if err != nil {
+		//	return
+		//}
+		//xl.Info("Generate New RunId:%s", loginMsg.RunId)
+		return fmt.Errorf("run_id empty")
+	}
 	xl.AppendPrefix(loginMsg.RunId)
+
 	ctx = xlog.NewContext(ctx, xl)
 	xl.Info("client login info: ip [%s] version [%s] hostname [%s] os [%s] arch [%s]",
 		ctlConn.RemoteAddr().String(), loginMsg.Version, loginMsg.Hostname, loginMsg.Os, loginMsg.Arch)
@@ -469,6 +474,8 @@ func (svr *Service) RegisterWorkConn(workConn net.Conn, newMsg *msg.NewWorkConn)
 		xl.Warn("No client control found for run id [%s]", newMsg.RunId)
 		return fmt.Errorf("no client control found for run id [%s]", newMsg.RunId)
 	}
+	xl.AppendPrefix(newMsg.RunId)
+	xl.Info("RegisterWorkConn start:%v", newMsg)
 	// server plugin hook
 	content := &plugin.NewWorkConnContent{
 		User: plugin.UserInfo{

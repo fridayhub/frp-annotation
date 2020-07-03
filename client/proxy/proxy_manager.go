@@ -76,6 +76,9 @@ func (pm *ProxyManager) HandleWorkConn(name string, workConn net.Conn, m *msg.St
 }
 
 func (pm *ProxyManager) HandleEvent(evType event.EventType, payload interface{}) error {
+	xl := xlog.FromContextSafe(pm.ctx)
+	xl.Info("ProxyManager HandleEvent evType:%d\n", evType)
+
 	var m msg.Message
 	switch e := payload.(type) {
 	case *event.StartProxyPayload:
@@ -87,6 +90,7 @@ func (pm *ProxyManager) HandleEvent(evType event.EventType, payload interface{})
 	}
 
 	err := errors.PanicToError(func() {
+		xl.Info("ProxyManager HandleEvent m:%v\n", m)
 		pm.sendCh <- m
 	})
 	return err
