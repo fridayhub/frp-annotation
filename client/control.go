@@ -146,6 +146,7 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 		xl.Warn("error during NewWorkConn authentication: %v", err)
 		return
 	}
+	xl.Info("msg.NewWorkConn:%v", m)
 	if err = msg.WriteMsg(workConn, m); err != nil {
 		xl.Warn("work connection write to server error: %v", err)
 		workConn.Close()
@@ -158,6 +159,7 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 		workConn.Close()
 		return
 	}
+	xl.Info("msg.StartWorkConn:%v", startMsg)
 	if startMsg.Error != "" {
 		xl.Error("StartWorkConn contains error: %s", startMsg.Error)
 		workConn.Close()
@@ -315,7 +317,7 @@ func (ctl *Control) msgHandler() {
 			if !ok {
 				return
 			}
-
+			xl.Info("readCh:%v", rawMsg)
 			switch m := rawMsg.(type) {
 			case *msg.ReqWorkConn:
 				go ctl.HandleReqWorkConn(m)

@@ -245,7 +245,7 @@ func (svr *Service) login() (conn net.Conn, session *fmux.Session, err error) {
 	loginMsg := &msg.Login{
 		Arch:      runtime.GOARCH,
 		Os:        runtime.GOOS,
-		PoolCount: svr.cfg.PoolCount,
+		PoolCount: svr.cfg.PoolCount, // 决定了服务端创建多少个 workConn。frps根据这个值反向给frpc发送msg.ReqWorkConn{},frpc根据这个消息创建一个新的stream：stream, errRet := ctl.session.OpenStream()
 		User:      svr.cfg.User,
 		Version:   version.Full(),
 		Timestamp: time.Now().Unix(),

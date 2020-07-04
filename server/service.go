@@ -392,6 +392,7 @@ func (svr *Service) HandleListener(l net.Listener) {
 		// Start a new goroutine for dealing connections.
 		go func(ctx context.Context, frpConn net.Conn) {
 			if svr.cfg.TcpMux {
+				log.Debug("svr.cfg.TcpMux.")
 				fmuxCfg := fmux.DefaultConfig()
 				fmuxCfg.KeepAliveInterval = 20 * time.Second
 				fmuxCfg.LogOutput = ioutil.Discard
@@ -404,6 +405,7 @@ func (svr *Service) HandleListener(l net.Listener) {
 
 				for {
 					stream, err := session.AcceptStream()
+					log.Debug("session.AcceptStream:%v", stream)
 					if err != nil {
 						log.Debug("Accept new mux stream error: %v", err)
 						session.Close()
