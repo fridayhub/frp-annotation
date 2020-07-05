@@ -48,6 +48,7 @@ var rootCmd = &cobra.Command
 					=> case *msg.NewWorkConn // frpc登录完成，然后发送此命令请求创建workConn， rawMsg:&{18:c0:4d:28:b1:44  0}
 					svr.RegisterWorkConn(conn, m)
 						func (svr *Service) RegisterWorkConn(workConn net.Conn, newMsg *msg.NewWorkConn) error
+						=> ctl, exist := svr.ctlManager.GetById(newMsg.RunId) // 通过Runid获取已经注册的ctl
 						=> ctl.RegisterWorkConn(workConn)
 							func (ctl *Control) RegisterWorkConn(conn net.Conn) error
 							=> case ctl.workConnCh <- conn  //将连接句柄 conn 写入到 连接buffer channel
@@ -60,6 +61,7 @@ var rootCmd = &cobra.Command
 					=> if workConn, err = pxy.getWorkConnFn(); err != nil // 调用 ctl.GetWorkConn 获取连接
 						func (ctl *Control) GetWorkConn() (workConn net.Conn, err error)
 						=> case workConn, ok = <-ctl.workConnCh
+				=> var local io.ReadWriteCloser = workConn
 				=> inCount, outCount := frpIo.Join(local, userConn) // 开始做转发
 
 
@@ -153,3 +155,21 @@ var rootCmd = &cobra.Command
 // PoolCount specifies the number of connections the client will make to
 // the server in advance. By default, this value is 0.
 	PoolCount int `json:"pool_count"`
+
+
+
+
+
+
+type TcpProxy struct {
+	*BaseProxy
+	cfg *config.TcpProxyConf
+
+	realPort int
+}
+
+
+
+func NewProxy(ctx context.Context, userInfo plugin.UserInfo, rc *controller.ResourceController, poolCount int, getWorkConnFn GetWorkConnFn, pxyConf config.ProxyConf, serverCfg config.ServerCommonConf) (pxy Proxy, err error)
+=> switch cfg := pxyConf.(type)
+	case *config.TcpProxyConf
