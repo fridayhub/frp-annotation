@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command
 											func (ctl *Control) GetWorkConn() (workConn net.Conn, err error)
 											=> case workConn, ok = <-ctl.workConnCh
 										=> remoteAddr, err = pxy.Run()
-										=> err = ctl.pxyManager.Add(pxyMsg.ProxyName, pxy) // 将 pxy加入到 ProxyManager.pxys 中
+										=> err = ctl.pxyManager.Add(pxyMsg.ProxyName, pxy) // 将 pxy加入到 ProxyManager.pxys 中, crl.pxyManager = svr.pxyManager
 											func (pxy *TcpProxy) Run() (remoteAddr string, err error) // 根据收到的信息中的端口信息，启动新的监听端口
 											=> listener, errRet := net.Listen("tcp", fmt.Sprintf("%s:%d", pxy.serverCfg.ProxyBindAddr, pxy.realPort)) // 开始监听
 											=> pxy.listeners = append(pxy.listeners, listener)   // 保存 listener
@@ -65,7 +65,7 @@ var rootCmd = &cobra.Command
 				=> inCount, outCount := frpIo.Join(local, userConn) // 开始做转发
 
 
-ProxyManager：
+ProxyManager:
 func runServer(cfg config.ServerCommonConf) (err error)
 => svr, err := server.NewService(cfg)
 	svr = &Service{pxyManager:    proxy.NewProxyManager()}
@@ -173,3 +173,10 @@ type TcpProxy struct {
 func NewProxy(ctx context.Context, userInfo plugin.UserInfo, rc *controller.ResourceController, poolCount int, getWorkConnFn GetWorkConnFn, pxyConf config.ProxyConf, serverCfg config.ServerCommonConf) (pxy Proxy, err error)
 => switch cfg := pxyConf.(type)
 	case *config.TcpProxyConf
+
+
+func (ctl *Control) GetWorkConn() (workConn net.Conn, err error)
+=> case workConn, ok = <-ctl.workConnCh
+=> default:
+	=> ctl.sendCh <- &msg.ReqWorkConn{}
+	=> case workConn, ok = <-ctl.workConnCh
